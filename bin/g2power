@@ -1,0 +1,92 @@
+#!/bin/zsh
+
+S0=`basename $0`
+
+PIN=10
+
+err() {
+   echo "$@" >&2
+}
+
+usage() {
+   err "usage: ${S0} <cmd>"
+   err ""
+   err "cmd is one of:"
+   err "   get           reads power state"
+   err "   on            turns power on"
+   err "   off           turns power off"
+   err "   reset [sec]   cycles power for [sec] seconds (default 2)"
+
+   gpio_cleanup
+   exit 1
+}
+
+gpio_setup() {
+   gpio export ${PIN} output
+}
+
+gpio_cleanup() {
+   gpio unexport ${PIN}
+}
+
+power_get() {
+   echo -n "power is: "
+   RS0=`gpio read ${PIN}`
+   state="undefined"
+   case ${RS0} in
+      "1")
+         state="off"
+         ;;
+      "0")
+         state="on"
+         ;;
+      *)
+         ;;
+   esac
+   echo "${state}"
+}
+
+power_on() {
+   echo "Turning power on."
+   gpio write ${PIN} off
+}
+
+power_off() {
+   echo "Turning power off."
+   gpio write ${PIN} on
+}
+
+power_reset() {
+   sec=2
+   [[ ! -z "${1}" ]] && [[ "${1}" =~ "[[:digit:]+]" ]] && sec=${1}
+   power_off
+   echo "Waiting for ${sec} seconds..."
+   sleep ${sec}
+   power_on
+}
+
+[[ -z "${1}" ]] && usage
+
+gpio_setup
+
+case ${1} in
+   "get")
+      power_get
+      ;;
+   "on")
+      power_on
+      ;;
+   "off")
+      power_off
+      ;;
+   "reset")
+      power_reset ${2}
+      ;;
+   *)
+      usage
+      ;;
+esac
+
+gpio_cleanup
+
+# vim: ai et ts=3 sw=3
