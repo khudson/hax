@@ -29,6 +29,8 @@ gpio_cleanup() {
    gpio unexport ${PIN}
 }
 
+trap gpio_cleanup TERM INT QUIT
+
 power_get() {
    echo -n "power is: "
    RS0=`gpio read ${PIN}`
